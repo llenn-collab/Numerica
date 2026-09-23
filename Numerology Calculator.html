@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Numerology Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDE7D9;
+    --ink:#1B1E29;
+    --ink-muted:#6b6656;
+    --brass:#9C7A34;
+    --verdigris:#3E7566;
+    --line:rgba(27,30,41,0.16);
+    --font-serif:'Fraunces', Georgia, 'Times New Roman', serif;
+    --font-sans:'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14141C; --ink:#EDE7D9; --ink-muted:#a79f8c;
+      --brass:#C9A24B; --verdigris:#6FA593; --line:rgba(237,231,217,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14141C; --ink:#EDE7D9; --ink-muted:#a79f8c;
+    --brass:#C9A24B; --verdigris:#6FA593; --line:rgba(237,231,217,0.16);
+  }
+  html,body{height:100%;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:640px; margin:0 auto; padding:clamp(2.5rem,7vw,5rem) 1.5rem clamp(3rem,8vw,5rem);}
+  h1{font-family:var(--font-serif); font-weight:600; font-size:clamp(2.1rem,6vw,3rem); margin:0 0 0.6rem; letter-spacing:-0.01em;}
+  .sub{color:var(--ink-muted); font-size:0.98rem; line-height:1.5; max-width:42ch; margin:0;}
+
+  .modeToggle{display:inline-flex; border:1px solid var(--line); border-radius:999px; padding:3px; margin-top:1.8rem;}
+  .modeBtn{border:none; background:transparent; font-family:var(--font-sans); font-size:0.85rem; color:var(--ink-muted); padding:0.45rem 1rem; border-radius:999px; cursor:pointer; transition:background .2s ease,color .2s ease;}
+  .modeBtn.active{background:var(--ink); color:var(--bg);}
+
+  .field{width:100%; font-family:var(--font-serif); font-weight:500; font-size:clamp(1.3rem,4vw,1.8rem); background:transparent; border:none; border-bottom:2px solid var(--line); padding:0.5em 0.05em; color:var(--ink); outline:none; transition:border-color 0.2s ease;}
+  .field::placeholder{color:var(--ink-muted); opacity:0.55;}
+  .field:focus{border-bottom-color:var(--brass);}
+  #quickMode .field{font-size:clamp(1.5rem,4.5vw,2.1rem); margin-top:2.4rem;}
+
+  .strip{display:flex; gap:1.1rem; overflow-x:auto; margin-top:1.8rem; padding:0.3rem 0.1rem 0.6rem; visibility:hidden;}
+  .strip.show{visibility:visible;}
+  .letter{display:flex; flex-direction:column; align-items:center; flex:0 0 auto; min-width:1.4rem;}
+  .letter .ch{font-family:var(--font-serif); font-size:1.35rem; line-height:1;}
+  .letter .p{color:var(--brass); font-size:0.68rem; margin-top:0.4rem; line-height:1;}
+  .letter .c{color:var(--verdigris); font-size:0.68rem; margin-top:0.18rem; line-height:1;}
+  .letter.empty .ch{color:var(--ink-muted); opacity:0.4;}
+
+  .results{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); margin-top:2.2rem; border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+  .panel{background:var(--bg); padding:1.5rem 1.3rem; border-left:2px solid transparent;}
+  .panel.pyth{border-left-color:var(--brass);}
+  .panel.chald{border-left-color:var(--verdigris);}
+  .panel .label{font-size:0.85rem; color:var(--ink-muted); margin:0 0 0.3rem;}
+  .panel .sum{font-family:var(--font-serif); font-weight:500; line-height:1; font-size:clamp(2.3rem,7.5vw,3.1rem); margin:0;}
+  .panel.pyth .sum{color:var(--brass);}
+  .panel.chald .sum{color:var(--verdigris);}
+  .panel .root{font-size:0.85rem; color:var(--ink-muted); margin-top:0.55rem;}
+  .panel .root b{color:var(--ink); font-weight:600;}
+
+  .formGroup{margin-top:1.6rem;}
+  .formGroup label{display:block; font-size:0.82rem; color:var(--ink-muted); margin-bottom:0.5rem;}
+
+  .group{margin-top:2.4rem;}
+  .group-title{font-size:0.85rem; color:var(--ink-muted); margin:0 0 1rem;}
+  .legend{display:flex; gap:1.2rem; margin:-0.4rem 0 1.2rem; font-size:0.78rem; color:var(--ink-muted);}
+  .legend span{display:inline-flex; align-items:center; gap:0.4rem;}
+  .dot{width:8px; height:8px; border-radius:50%; display:inline-block;}
+  .dot.pyth{background:var(--brass);}
+  .dot.chald{background:var(--verdigris);}
+
+  .birthrow{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+  .stat{background:var(--bg); padding:1.3rem 1.2rem;}
+  .stat-label{font-size:0.82rem; color:var(--ink-muted); margin:0 0 0.4rem;}
+  .stat-num{font-family:var(--font-serif); font-weight:500; font-size:clamp(2rem,6vw,2.6rem); margin:0; line-height:1;}
+  .stat-sub{font-size:0.78rem; color:var(--ink-muted); margin-top:0.5rem;}
+
+  .namerow{padding:1.1rem 0; border-bottom:1px solid var(--line);}
+  .namerow:first-of-type{border-top:1px solid var(--line);}
+  .namerow-label{font-size:0.82rem; color:var(--ink-muted); margin:0 0 0.6rem;}
+  .dual{display:flex; gap:2.4rem;}
+  .dualstat{display:flex; align-items:baseline; gap:0.5rem;}
+  .dualstat .num{font-family:var(--font-serif); font-weight:500; font-size:1.7rem;}
+  .dualstat.pyth .num{color:var(--brass);}
+  .dualstat.chald .num{color:var(--verdigris);}
+  .dualstat .sub{font-size:0.76rem; color:var(--ink-muted);}
+
+  .pulse{animation:pulse 0.26s ease;}
+  @keyframes pulse{from{opacity:0.25; transform:translateY(3px);} to{opacity:1; transform:none;}}
+  .hidden{display:none;}
+
+  @media (max-width:480px){
+    .results{grid-template-columns:1fr;}
+    .panel{border-left-width:2px;}
+    .birthrow{grid-template-columns:1fr;}
+    .dual{gap:1.6rem;}
+  }
+  @media (prefers-reduced-motion: reduce){ .pulse{animation:none;} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Numerology</h1>
+    <p class="sub">Type any word for an instant letter sum, or switch to a full calculation from a birth date and name.</p>
+
+    <div class="modeToggle" role="tablist">
+      <button class="modeBtn active" data-mode="quick">Quick check</button>
+      <button class="modeBtn" data-mode="full">Birth &amp; name</button>
+    </div>
+
+    <section id="quickMode">
+      <input id="word" class="field" type="text" placeholder="Type here" autofocus autocomplete="off" spellcheck="false">
+      <div id="strip" class="strip"></div>
+      <div class="results">
+        <div class="panel pyth">
+          <p class="label">Pythagorean</p>
+          <p class="sum" id="pSum">0</p>
+          <p class="root" id="pRoot">—</p>
+        </div>
+        <div class="panel chald">
+          <p class="label">Chaldean</p>
+          <p class="sum" id="cSum">0</p>
+          <p class="root" id="cRoot">—</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="fullMode" class="hidden">
+      <div class="formGroup">
+        <label for="bdate">Birth date</label>
+        <input id="bdate" class="field" type="date">
+      </div>
+      <div class="formGroup">
+        <label for="fullname">Full name</label>
+        <input id="fullname" class="field" type="text" placeholder="Full name" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="group">
+        <p class="group-title">From your birth date</p>
+        <div class="birthrow">
+          <div class="stat">
+            <p class="stat-label">Birth core</p>
+            <p class="stat-num" id="bcNum">—</p>
+            <p class="stat-sub" id="bcSub"></p>
+          </div>
+          <div class="stat">
+            <p class="stat-label">Life path</p>
+            <p class="stat-num" id="lpNum">—</p>
+            <p class="stat-sub" id="lpSub"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <p class="group-title">From your name</p>
+        <div class="legend">
+          <span><i class="dot pyth"></i>Pythagorean</span>
+          <span><i class="dot chald"></i>Chaldean</span>
+        </div>
+
+        <div class="namerow">
+          <p class="namerow-label">Destiny</p>
+          <div class="dual">
+            <div class="dualstat pyth"><span class="num" id="destinyP">—</span><span class="sub" id="destinyPsub"></span></div>
+            <div class="dualstat chald"><span class="num" id="destinyC">—</span><span class="sub" id="destinyCsub"></span></div>
+          </div>
+        </div>
+        <div class="namerow">
+          <p class="namerow-label">Soul urge</p>
+          <div class="dual">
+            <div class="dualstat pyth"><span class="num" id="soulP">—</span><span class="sub" id="soulPsub"></span></div>
+            <div class="dualstat chald"><span class="num" id="soulC">—</span><span class="sub" id="soulCsub"></span></div>
+          </div>
+        </div>
+        <div class="namerow">
+          <p class="namerow-label">Personality</p>
+          <div class="dual">
+            <div class="dualstat pyth"><span class="num" id="persP">—</span><span class="sub" id="persPsub"></span></div>
+            <div class="dualstat chald"><span class="num" id="persC">—</span><span class="sub" id="persCsub"></span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+<script>
+  const pyth = {a:1,b:2,c:3,d:4,e:5,f:6,g:7,h:8,i:9,j:1,k:2,l:3,m:4,n:5,o:6,p:7,q:8,r:9,s:1,t:2,u:3,v:4,w:5,x:6,y:7,z:8};
+  const chald = {a:1,i:1,j:1,q:1,y:1,b:2,k:2,r:2,c:3,g:3,l:3,s:3,d:4,m:4,t:4,e:5,h:5,n:5,x:5,u:6,v:6,w:6,o:7,z:7,f:8,p:8};
+  const VOWELS = new Set(['a','e','i','o','u']);
+
+  function reducePart(n){
+    while(n>9 && n!==11 && n!==22 && n!==33){
+      n = String(n).split('').reduce((a,d)=>a+ +d,0);
+    }
+    return n;
+  }
+  function bump(el){ el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse'); }
+  function valueOf(ch, system){
+    const lower = ch.toLowerCase();
+    if(/[a-z]/.test(lower)) return system[lower];
+    if(/[0-9]/.test(ch)) return parseInt(ch,10);
+    return null;
+  }
+
+  // -- Quick check --
+  const input = document.getElementById('word');
+  const strip = document.getElementById('strip');
+  const pSum = document.getElementById('pSum');
+  const cSum = document.getElementById('cSum');
+  const pRoot = document.getElementById('pRoot');
+  const cRoot = document.getElementById('cRoot');
+
+  function rootLabel(sum){
+    if(!sum) return '—';
+    const r = reducePart(sum);
+    const master = (r===11||r===22||r===33) ? ' (master number)' : '';
+    return `${sum} reduces to <b>${r}</b>${master}`;
+  }
+
+  function renderQuick(){
+    const val = input.value;
+    let ps = 0, cs = 0;
+    const frag = document.createDocumentFragment();
+    for(const ch of val){
+      const pv = valueOf(ch, pyth), cv = valueOf(ch, chald);
+      const div = document.createElement('div');
+      div.className = 'letter';
+      if(pv!==null){
+        ps += pv; cs += cv;
+        div.innerHTML = `<span class="ch">${ch.toUpperCase()}</span><span class="p">${pv}</span><span class="c">${cv}</span>`;
+      } else {
+        div.classList.add('empty');
+        div.innerHTML = `<span class="ch">${/\S/.test(ch) ? ch : '·'}</span>`;
+      }
+      frag.appendChild(div);
+    }
+    strip.innerHTML = '';
+    strip.appendChild(frag);
+    strip.classList.toggle('show', val.length > 0);
+    pSum.textContent = ps; cSum.textContent = cs;
+    pRoot.innerHTML = rootLabel(ps); cRoot.innerHTML = rootLabel(cs);
+    bump(pSum); bump(cSum);
+  }
+  input.addEventListener('input', renderQuick);
+
+  // -- Birth & name --
+  const dateInput = document.getElementById('bdate');
+  const nameInput = document.getElementById('fullname');
+
+  function setStat(numId, subId, num, sub){
+    const numEl = document.getElementById(numId), subEl = document.getElementById(subId);
+    numEl.textContent = num; subEl.textContent = sub; bump(numEl);
+  }
+
+  function nameValue(name, system, filter){
+    let sum = 0;
+    for(const ch of name){
+      const lower = ch.toLowerCase();
+      if(/[a-z]/.test(lower)){
+        const isVowel = VOWELS.has(lower);
+        if(filter==='all' || (filter==='vowel'&&isVowel) || (filter==='consonant'&&!isVowel)) sum += system[lower];
+      } else if(/[0-9]/.test(ch) && filter==='all'){
+        sum += parseInt(ch,10);
+      }
+    }
+    return sum;
+  }
+
+  function renderNameStat(prefix, name, filter){
+    const has = name && name.trim().length > 0;
+    const pS = nameValue(name, pyth, filter), cS = nameValue(name, chald, filter);
+    setStat(prefix+'P', prefix+'Psub', has ? reducePart(pS) : '—', has ? pS : '');
+    setStat(prefix+'C', prefix+'Csub', has ? reducePart(cS) : '—', has ? cS : '');
+  }
+
+  function renderFull(){
+    const dv = dateInput.value;
+    if(dv){
+      const [y,m,d] = dv.split('-').map(Number);
+      const rm = reducePart(m), rd = reducePart(d), ry = reducePart(y);
+      const lp = reducePart(rm+rd+ry);
+      const bc = reducePart(d);
+      setStat('bcNum','bcSub', bc, `day ${d} → ${bc}`);
+      setStat('lpNum','lpSub', lp, `${rm} + ${rd} + ${ry} → ${lp}`);
+    } else {
+      setStat('bcNum','bcSub','—',''); setStat('lpNum','lpSub','—','');
+    }
+    const nm = nameInput.value;
+    renderNameStat('destiny', nm, 'all');
+    renderNameStat('soul', nm, 'vowel');
+    renderNameStat('pers', nm, 'consonant');
+  }
+  dateInput.addEventListener('input', renderFull);
+  nameInput.addEventListener('input', renderFull);
+
+  // -- Mode toggle --
+  const modeBtns = document.querySelectorAll('.modeBtn');
+  const quickSection = document.getElementById('quickMode');
+  const fullSection = document.getElementById('fullMode');
+  modeBtns.forEach(btn => btn.addEventListener('click', () => {
+    modeBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const mode = btn.dataset.mode;
+    quickSection.classList.toggle('hidden', mode !== 'quick');
+    fullSection.classList.toggle('hidden', mode !== 'full');
+  }));
+
+  renderQuick();
+  renderFull();
+</script>
+</body>
+</html>
