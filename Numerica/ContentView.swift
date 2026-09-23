@@ -20,7 +20,7 @@ struct ContentView: View {
     @State private var mode: CalculatorMode = .quick
     @State private var quickInput = ""
     @State private var fullName = ""
-    @State private var birthDate = Calendar.current.date(byAdding: .year, value: -25, to: Date()) ?? Date()
+    @State private var birthDate = ContentView.defaultBirthDate
     @State private var showBreakdown = true
     @FocusState private var focusedField: Field?
     @Namespace private var segmentNamespace
@@ -29,6 +29,11 @@ struct ContentView: View {
     fileprivate enum Field: Hashable {
         case quick
         case name
+    }
+
+    /// Opens on a plausible adult birth date instead of today.
+    private static var defaultBirthDate: Date {
+        Calendar.current.date(byAdding: .year, value: -25, to: Date()) ?? Date()
     }
 
     /// Spec §14: reduced motion falls back to a short opacity-only cross-fade.
@@ -139,13 +144,19 @@ struct ContentView: View {
         .padding(.bottom, 18)
     }
 
+    /// Plain-language framing for whichever mode is showing.
+    private var footerNote: String {
+        mode == .quick
+            ? "Live calculation. Digits contribute their face value; "
+                + "spaces and punctuation are ignored."
+            : "Date values are shared. Name values are shown in both systems."
+    }
+
     private var footer: some View {
         VStack(spacing: 0) {
             Hairline()
             HStack {
-                Text(mode == .quick
-                     ? "Live calculation. Digits contribute their face value; spaces and punctuation are ignored."
-                     : "Date values are shared. Name values are shown in both systems.")
+                Text(footerNote)
                     .font(.system(size: 10.5, weight: .medium))
                     .tracking(0.3)
                     .foregroundStyle(Theme.muted)
@@ -171,7 +182,14 @@ private struct QuickCheckView: View {
     private let maxInputLength = 60
 
     private var normalizedInput: String {
-        input.folding(options: [.diacriticInsensitive, .widthInsensitive], locale: .current).uppercased()
+        // One normalization policy shared with the calculator, so what the grid
+        // shows always matches what it summed.
+        NumerologySystem.normalized(input)
+    }
+
+    /// Character positions double as stable identities for the grid.
+    private var characters: [(offset: Int, element: Character)] {
+        Array(normalizedInput.enumerated())
     }
 
     var body: some View {
@@ -179,7 +197,9 @@ private struct QuickCheckView: View {
             // Reference-style underline field: transparent, hairline bottom rule.
             VStack(spacing: 7) {
                 HStack(alignment: .bottom, spacing: 12) {
-                    TextField("Enter a name, word, phrase, or number…", text: $input, axis: .vertical)
+                    TextField("Enter a name, word, phrase, or number…",
+                              text: $input,
+                              axis: .vertical)
                         .textFieldStyle(.plain)
                         .font(.system(size: 24))
                         .lineLimit(1...3)
@@ -250,7 +270,7 @@ private struct QuickCheckView: View {
                     } else {
                         // Wraps in place — ScrollView removed per hard rule.
                         FlowLayout(hSpacing: 10, vSpacing: 12) {
-                            ForEach(Array(normalizedInput.enumerated()), id: \.offset) { _, character in
+                            ForEach(characters, id: \.offset) { _, character in
                                 LetterCell(character: character)
                             }
                         }
@@ -269,12 +289,75 @@ private struct QuickCheckView: View {
     }
 }
 
+/// One system's live readout in the Quick Check grid: a 2pt accent border,
+/// the running total, its single-digit root, and how many characters counted.
+private struct SystemPanel: View {
+    let system: NumerologySystem
+    let input: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        let result = system.evaluate(input)
+        let hasValues = result.count > 0
+
+        VStack(spacing: 0) {
+            Rectangle()
+                .fill(system.accent)
+                .frame(height: 2)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(system.rawValue)
+                    .font(.system(size: 12))
+                    .tracking(0.3)
+                    .foregroundStyle(system.textAccent)
+
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text(hasValues ? "\(result.total)" : "—")
+                        .font(.system(size: 38, weight: .semibold))
+                        .tracking(-0.76)
+                        .monospacedDigit()
+                        .foregroundStyle(system.accent)
+                        .contentTransition(.numericText())
+                        .animation(reduceMotion ? nil : Theme.spring, value: result.total)
+
+                    if hasValues {
+                        Text("→ \(result.reduced)")
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundStyle(Theme.muted)
+                    }
+                }
+
+                Text(caption(for: result))
+                    .font(.system(size: 10.5))
+                    .tracking(0.3)
+                    .foregroundStyle(Theme.muted)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(system.rawValue))
+        .accessibilityValue(Text(hasValues
+                                 ? "\(result.total), root \(result.reduced)"
+                                 : "No values"))
+    }
+
+    /// Empty and non-matching input read as guidance, never as a bare zero.
+    private func caption(for result: NumerologyResult) -> String {
+        guard result.count == 0 else {
+            return result.count == 1 ? "1 character counted" : "\(result.count) characters counted"
+        }
+        return input.isEmpty ? "Enter text or digits" : "No letters or digits found"
+    }
+}
+
 private struct LetterCell: View {
     let character: Character
 
     private func value(_ system: NumerologySystem) -> Int? {
         if let v = system.mapping[character] { return v }
-        return character.wholeNumberValue
+        return NumerologySystem.digitValue(of: character)
     }
 
     var body: some View {
@@ -290,12 +373,16 @@ private struct LetterCell: View {
             }
             .font(.system(size: 10, weight: .medium, design: .monospaced))
             .frame(minWidth: 26)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(String(character)))
+            .accessibilityValue(Text("Pythagorean \(p), Chaldean \(c)"))
         } else {
             // Spaces and punctuation participate in nothing — dimmed glyph.
             Text(character.isWhitespace ? "·" : String(character))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(Theme.muted.opacity(0.5))
                 .frame(width: 26, height: 44)
+                .accessibilityLabel(Text(character.isWhitespace ? "space" : String(character)))
         }
     }
 }
@@ -307,15 +394,15 @@ private struct BirthCalculatorView: View {
     @Binding var birthDate: Date
     @FocusState.Binding var focusedField: ContentView.Field?
 
-    private var profile: BirthProfile {
-        NumerologySystem.birthProfile(fullName: fullName, date: birthDate)
-    }
-
-    private var birthDay: Int {
-        Calendar.current.component(.day, from: birthDate)
-    }
-
     var body: some View {
+        // Derived once per render rather than on every panel and row that reads it.
+        let profile = NumerologySystem.birthProfile(fullName: fullName, date: birthDate)
+        let birthDay = Calendar.current.component(.day, from: birthDate)
+        // Captions state the arithmetic behind each panel's headline number.
+        let birthCoreCaption = "day \(birthDay) → \(profile.date.birthCoreReduced)"
+        let lifePathCaption =
+            "\(profile.date.lifePathTotal) reduces to \(profile.date.lifePathReduced)"
+
         VStack(spacing: 0) {
             HStack(alignment: .bottom, spacing: 24) {
                 VStack(alignment: .leading, spacing: 7) {
@@ -343,13 +430,13 @@ private struct BirthCalculatorView: View {
                 VStack(spacing: 0) {
                     Hairline()
                     HStack(spacing: 0) {
-                        StatPanel(label: "Birth core", total: profile.date.birthCoreTotal,
-                                  reduced: profile.date.birthCoreReduced,
-                                  caption: "day \(birthDay) → \(profile.date.birthCoreReduced)")
+                        StatPanel(label: "Birth core",
+                                  total: profile.date.birthCoreTotal,
+                                  caption: birthCoreCaption)
                         Hairline(vertical: true)
-                        StatPanel(label: "Life path", total: profile.date.lifePathTotal,
-                                  reduced: profile.date.lifePathReduced,
-                                  caption: "\(profile.date.lifePathTotal) reduces to \(profile.date.lifePathReduced)")
+                        StatPanel(label: "Life path",
+                                  total: profile.date.lifePathTotal,
+                                  caption: lifePathCaption)
                     }
                     .fixedSize(horizontal: false, vertical: true)
                     Hairline()
@@ -387,7 +474,6 @@ private struct BirthCalculatorView: View {
 private struct StatPanel: View {
     let label: String
     let total: Int
-    let reduced: Int
     let caption: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -456,6 +542,9 @@ private struct DualStat: View {
                 .foregroundStyle(Theme.muted)
         }
         .frame(minWidth: 120, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(system.rawValue))
+        .accessibilityValue(Text("\(result.total), root \(result.reduced)"))
     }
 }
 
@@ -501,9 +590,14 @@ private struct FieldRule: View {
     let focused: Bool
     @Environment(\.colorSchemeContrast) private var contrast
 
+    private var ruleColor: Color {
+        guard !focused else { return Theme.brass }
+        return contrast == .increased ? Theme.hairlineStrong : Theme.hairline
+    }
+
     var body: some View {
         Rectangle()
-            .fill(focused ? Theme.brass : (contrast == .increased ? Theme.hairlineStrong : Theme.hairline))
+            .fill(ruleColor)
             .frame(height: focused ? 2 : 1)
     }
 }
@@ -561,10 +655,15 @@ private struct FlowLayout: Layout {
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let maxWidth = proposal.width ?? .infinity
-        var x: CGFloat = 0, y: CGFloat = 0, rowHeight: CGFloat = 0
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        var widestRow: CGFloat = 0
+
         for subview in subviews {
             let size = subview.sizeThatFits(.unspecified)
             if x > 0, x + size.width > maxWidth {
+                widestRow = max(widestRow, x - hSpacing)
                 x = 0
                 y += rowHeight + vSpacing
                 rowHeight = 0
@@ -572,11 +671,22 @@ private struct FlowLayout: Layout {
             rowHeight = max(rowHeight, size.height)
             x += size.width + hSpacing
         }
-        return CGSize(width: maxWidth, height: y + rowHeight)
+        widestRow = max(widestRow, x - hSpacing)
+
+        // Never return an infinite width: fall back to the measured content.
+        return CGSize(width: proposal.width ?? widestRow, height: y + rowHeight)
     }
 
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX, y = bounds.minY, rowHeight: CGFloat = 0
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+
         for subview in subviews {
             let size = subview.sizeThatFits(.unspecified)
             if x > bounds.minX, x + size.width > bounds.maxX {
