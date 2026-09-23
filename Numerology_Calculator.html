@@ -6,7 +6,7 @@
 <title>Numerology Calculator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#EDE7D9;
@@ -15,7 +15,6 @@
     --brass:#9C7A34;
     --verdigris:#3E7566;
     --line:rgba(27,30,41,0.16);
-    --font-serif:'Fraunces', Georgia, 'Times New Roman', serif;
     --font-sans:'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
     padding-top:env(safe-area-inset-top,0px);
     padding-bottom:env(safe-area-inset-bottom,0px);
@@ -33,24 +32,24 @@
   html,body{height:100%;}
   html{scroll-padding-top:env(safe-area-inset-top,0px);}
   *{box-sizing:border-box;}
-  body{margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased;}
-  .wrap{max-width:640px; margin:0 auto; padding:clamp(2.5rem,7vw,5rem) 1.5rem clamp(3rem,8vw,5rem);}
-  h1{font-family:var(--font-serif); font-weight:600; font-size:clamp(2.1rem,6vw,3rem); margin:0 0 0.6rem; letter-spacing:-0.01em;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; min-height:100dvh; overflow-x:hidden; display:grid; place-items:center;}
+  .wrap{box-sizing:border-box; width:100%; max-width:640px; margin:0 auto; padding:clamp(1.25rem,4vh,2.5rem) 1.5rem;}
+  h1{font-family:var(--font-sans); font-weight:600; font-size:clamp(2.1rem,6vw,3rem); margin:0 0 0.6rem; letter-spacing:-0.02em; line-height:1.05;}
   .sub{color:var(--ink-muted); font-size:0.98rem; line-height:1.5; max-width:42ch; margin:0;}
 
   .modeToggle{display:inline-flex; border:1px solid var(--line); border-radius:999px; padding:3px; margin-top:1.8rem;}
   .modeBtn{border:none; background:transparent; font-family:var(--font-sans); font-size:0.85rem; color:var(--ink-muted); padding:0.45rem 1rem; border-radius:999px; cursor:pointer; transition:background .2s ease,color .2s ease;}
   .modeBtn.active{background:var(--ink); color:var(--bg);}
 
-  .field{width:100%; font-family:var(--font-serif); font-weight:500; font-size:clamp(1.3rem,4vw,1.8rem); background:transparent; border:none; border-bottom:2px solid var(--line); padding:0.5em 0.05em; color:var(--ink); outline:none; transition:border-color 0.2s ease;}
+  .field{width:100%; font-family:var(--font-sans); font-weight:500; font-size:clamp(1.3rem,4vw,1.8rem); background:transparent; border:none; border-bottom:2px solid var(--line); padding:0.5em 0.05em; color:var(--ink); outline:none; transition:border-color 0.2s ease;}
   .field::placeholder{color:var(--ink-muted); opacity:0.55;}
   .field:focus{border-bottom-color:var(--brass);}
   #quickMode .field{font-size:clamp(1.5rem,4.5vw,2.1rem); margin-top:2.4rem;}
 
-  .strip{display:flex; gap:1.1rem; overflow-x:auto; margin-top:1.8rem; padding:0.3rem 0.1rem 0.6rem; visibility:hidden;}
+  .strip{display:flex; flex-wrap:wrap; gap:1.1rem; margin-top:1.8rem; padding:0.3rem 0.1rem 0.6rem; visibility:hidden;}
   .strip.show{visibility:visible;}
   .letter{display:flex; flex-direction:column; align-items:center; flex:0 0 auto; min-width:1.4rem;}
-  .letter .ch{font-family:var(--font-serif); font-size:1.35rem; line-height:1;}
+  .letter .ch{font-family:var(--font-sans); font-size:1.35rem; line-height:1;}
   .letter .p{color:var(--brass); font-size:0.68rem; margin-top:0.4rem; line-height:1;}
   .letter .c{color:var(--verdigris); font-size:0.68rem; margin-top:0.18rem; line-height:1;}
   .letter.empty .ch{color:var(--ink-muted); opacity:0.4;}
@@ -60,7 +59,7 @@
   .panel.pyth{border-left-color:var(--brass);}
   .panel.chald{border-left-color:var(--verdigris);}
   .panel .label{font-size:0.85rem; color:var(--ink-muted); margin:0 0 0.3rem;}
-  .panel .sum{font-family:var(--font-serif); font-weight:500; line-height:1; font-size:clamp(2.3rem,7.5vw,3.1rem); margin:0;}
+  .panel .sum{font-family:var(--font-sans); font-weight:600; line-height:1; font-size:clamp(2.3rem,7.5vw,3.1rem); margin:0; letter-spacing:-0.02em;}
   .panel.pyth .sum{color:var(--brass);}
   .panel.chald .sum{color:var(--verdigris);}
   .panel .root{font-size:0.85rem; color:var(--ink-muted); margin-top:0.55rem;}
@@ -69,7 +68,7 @@
   .formGroup{margin-top:1.6rem;}
   .formGroup label{display:block; font-size:0.82rem; color:var(--ink-muted); margin-bottom:0.5rem;}
 
-  .group{margin-top:2.4rem;}
+  .group{margin-top:2rem;}
   .group-title{font-size:0.85rem; color:var(--ink-muted); margin:0 0 1rem;}
   .legend{display:flex; gap:1.2rem; margin:-0.4rem 0 1.2rem; font-size:0.78rem; color:var(--ink-muted);}
   .legend span{display:inline-flex; align-items:center; gap:0.4rem;}
@@ -80,7 +79,7 @@
   .birthrow{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
   .stat{background:var(--bg); padding:1.3rem 1.2rem;}
   .stat-label{font-size:0.82rem; color:var(--ink-muted); margin:0 0 0.4rem;}
-  .stat-num{font-family:var(--font-serif); font-weight:500; font-size:clamp(2rem,6vw,2.6rem); margin:0; line-height:1;}
+  .stat-num{font-family:var(--font-sans); font-weight:600; font-size:clamp(2rem,6vw,2.6rem); margin:0; line-height:1; letter-spacing:-0.02em;}
   .stat-sub{font-size:0.78rem; color:var(--ink-muted); margin-top:0.5rem;}
 
   .namerow{padding:1.1rem 0; border-bottom:1px solid var(--line);}
@@ -88,7 +87,7 @@
   .namerow-label{font-size:0.82rem; color:var(--ink-muted); margin:0 0 0.6rem;}
   .dual{display:flex; gap:2.4rem;}
   .dualstat{display:flex; align-items:baseline; gap:0.5rem;}
-  .dualstat .num{font-family:var(--font-serif); font-weight:500; font-size:1.7rem;}
+  .dualstat .num{font-family:var(--font-sans); font-weight:600; font-size:1.7rem; letter-spacing:-0.01em;}
   .dualstat.pyth .num{color:var(--brass);}
   .dualstat.chald .num{color:var(--verdigris);}
   .dualstat .sub{font-size:0.76rem; color:var(--ink-muted);}

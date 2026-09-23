@@ -12,6 +12,7 @@ Designed for rapid, live checks of arbitrary text. Both letters and numbers are 
 - Spaces and punctuation are ignored
 - Single-digit root shown alongside the total
 - Letter/digit-by-digit breakdown
+- Quick Check input is capped at 60 characters so the fixed, content-sized window never scrolls
 
 ## Birth Calculator
 
