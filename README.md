@@ -1,35 +1,51 @@
-# Numerica — macOS
+# Numerica
 
-A native SwiftUI macOS numerology calculator with two modes:
+Native SwiftUI numerology calculator for macOS.
+
+Two modes share one fixed window. The window sizes to content. Nothing scrolls.
 
 ## Quick Check
 
-Designed for rapid, live checks of arbitrary text. Both letters and numbers are included:
+Type any text. Totals update as you type. Letters and digits both count.
 
 - Pythagorean letter values
 - Chaldean letter values
-- Each decimal digit contributes its face value (for example, `23` contributes `2 + 3`)
+- Each decimal digit adds face value. Example: `23` adds `2 + 3`
 - Spaces and punctuation are ignored
-- Single-digit root shown alongside the total
-- Letter/digit-by-digit breakdown
-- Quick Check input is capped at 60 characters so the fixed, content-sized window never scrolls
+- Single-digit root sits next to the total
+- Letter and digit breakdown
+- Input stops at 60 characters so the window stays content-sized
+
+Clear the field with **Clear Input** (`⌘K`).
 
 ## Birth Calculator
 
-Designed for a proper name + birth-date calculation, kept separate from the fast arbitrary-input checker.
+Full name plus birth date. Kept apart from the free-text checker.
 
-- Birth Core — birth day of month
-- Life Path — sum of all birth-date digits
-- Destiny — full name
-- Soul Urge — vowels in the full name
-- Personality — consonants in the full name
-- Date-derived values are shared; name-derived values are shown in both Pythagorean and Chaldean systems
+- Birth Core: day of the month
+- Life Path: sum of all birth-date digits
+- Destiny: full name
+- Soul Urge: vowels in the full name
+- Personality: consonants in the full name
+- Date numbers are shared. Name numbers show Pythagorean and Chaldean side by side.
 
 ## Build on a Mac
 
 1. Open `Numerica.xcodeproj` in Xcode 15 or later.
 2. Select the `Numerica` macOS target.
 3. Choose **My Mac** as the run destination.
-4. Press **Run (⌘R)**.
+4. Press **Run** (`⌘R`).
 
-The project targets macOS 13+.
+Needs macOS 13 or later.
+
+## Tests
+
+In Xcode, press `⌘U`. Or:
+
+```
+xcodebuild test -project Numerica.xcodeproj -scheme Numerica
+```
+
+## License
+
+MIT. See `LICENSE`.
